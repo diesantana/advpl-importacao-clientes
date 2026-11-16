@@ -461,9 +461,9 @@ Static Function FormatarErroExecAuto(aDicCampos)
 Return "- " + cErroFmt
 
 /*/{Protheus.doc} ExibirResumo
-Apresenta uma interface visual estruturada com indicadores de totais,
-grid zebrado com alto contraste e semaforo por linha, painel de detalhe
-completo do registro selecionado e opcao para exportar o relatorio.
+Apresenta uma interface visual estruturada com indicadores de totais compactos
+e centralizados, grid zebrado via CSS nativo de alto contraste e semaforo por
+linha, painel de detalhe completo e opcao para exportar o relatorio.
 
 @type    Static Function
 @author  Diego Alves Santana
@@ -477,7 +477,7 @@ Static Function ExibirResumo(aResultado)
     Local oDetalhe    := Nil
     Local oBtnExport  := Nil
     Local oBtnFechar  := Nil
-    Local oFontBold   := TFont():New("Arial", , -14, , .T.)
+    Local oFontBold   := TFont():New("Arial", , -13, , .T.)
     Local oFontNorm   := TFont():New("Arial", , -12, , .F.)
     Local oVerde      := LoadBitmap(GetResources(), "BR_VERDE")
     Local oVermelho   := LoadBitmap(GetResources(), "BR_VERMELHO")
@@ -485,25 +485,35 @@ Static Function ExibirResumo(aResultado)
     Local nErros      := aResultado[2]
     Local aDetalhes   := aResultado[3]
     Local cDetAtual   := ""
+    Local cCssGrid    := ""
 
     If Len(aDetalhes) > 0
         cDetAtual := "Linha " + StrZero(aDetalhes[1][2], 4) + " [" + aDetalhes[1][3] + "]:" + CRLF + aDetalhes[1][4]
     EndIf
 
-    Define MsDialog oDlg Title "Resultado da Importacao de Clientes - CADCLIIA" From 000, 000 To 560, 920 Pixel
+    cCssGrid := "QTableView {" + ;
+                "  background-color: #FFFFFF;" + ;
+                "  alternate-background-color: #F2F6FC;" + ;
+                "  color: #111111;" + ;
+                "  gridline-color: #D9E1EC;" + ;
+                "  selection-background-color: #1E88E5;" + ;
+                "  selection-color: #FFFFFF;" + ;
+                "}"
 
-    // Painel superior com totalizadores visuais
-    @ 008, 010 To 042, 150 Label " Total Processado " Of oDlg Pixel
-    @ 020, 020 Say cValToChar(nIncluidos + nErros) + " registro(s)" Size 120, 015 Font oFontBold Color CLR_BLACK Of oDlg Pixel
+    Define MsDialog oDlg Title "Resultado da Importacao de Clientes - CADCLIIA" From 000, 000 To 550, 920 Pixel
 
-    @ 008, 160 To 042, 305 Label " Incluidos com Sucesso " Of oDlg Pixel
-    @ 020, 170 Say cValToChar(nIncluidos) + " cliente(s)" Size 125, 015 Font oFontBold Color CLR_GREEN Of oDlg Pixel
+    // Painel superior com cards compactos e centralizados
+    @ 008, 047 To 038, 162 Label " Total Processado " Of oDlg Pixel
+    @ 019, 057 Say cValToChar(nIncluidos + nErros) + " registro(s)" Size 095, 012 Font oFontBold Color CLR_BLACK Of oDlg Pixel
 
-    @ 008, 315 To 042, 450 Label " Registros com Erro " Of oDlg Pixel
-    @ 020, 325 Say cValToChar(nErros) + " erro(s)" Size 115, 015 Font oFontBold Color CLR_RED Of oDlg Pixel
+    @ 008, 172 To 038, 287 Label " Incluidos com Sucesso " Of oDlg Pixel
+    @ 019, 182 Say cValToChar(nIncluidos) + " cliente(s)" Size 095, 012 Font oFontBold Color CLR_GREEN Of oDlg Pixel
 
-    // Grid principal orientado a objetos (TWBrowse) com alto contraste
-    oBrowse := TWBrowse():New(048, 010, 440, 145, , {"", "Linha CSV", "Situacao", "Resumo da Ocorrencia"}, {18, 42, 75, 295}, oDlg, , , , , , , , , , , , .F., , .T., , .F., , , )
+    @ 008, 297 To 038, 412 Label " Registros com Erro " Of oDlg Pixel
+    @ 019, 307 Say cValToChar(nErros) + " erro(s)" Size 095, 012 Font oFontBold Color CLR_RED Of oDlg Pixel
+
+    // Grid principal orientado a objetos (TWBrowse) estilizado via CSS
+    oBrowse := TWBrowse():New(045, 010, 440, 148, , {"", "Linha CSV", "Situacao", "Resumo da Ocorrencia"}, {18, 42, 75, 295}, oDlg, , , , , , , , , , , , .F., , .T., , .F., , , )
     oBrowse:SetArray(aDetalhes)
     oBrowse:bLine := {|| { ;
         ObterIconeStatus(aDetalhes[oBrowse:nAt][1], oVerde, oVermelho), ;
@@ -511,21 +521,19 @@ Static Function ExibirResumo(aResultado)
         aDetalhes[oBrowse:nAt][3], ;
         StrTran(aDetalhes[oBrowse:nAt][4], CRLF, " ") ;
     }}
-    oBrowse:lUseDefaultColors := .F.
-    oBrowse:SetBlkColor({|| RGB(20, 20, 20)})
-    oBrowse:SetBlkBackColor({|| ObterCorLinha(oBrowse:nAt)})
+    oBrowse:SetCSS(cCssGrid)
     oBrowse:bChange := {|| ;
         cDetAtual := "Linha " + StrZero(aDetalhes[oBrowse:nAt][2], 4) + " [" + aDetalhes[oBrowse:nAt][3] + "]:" + CRLF + aDetalhes[oBrowse:nAt][4], ;
         oDetalhe:Refresh() ;
     }
 
-    // Painel inferior com o detalhe completo da linha selecionada (quebra de linha limpa)
+    // Painel inferior com o detalhe completo da linha selecionada
     @ 198, 010 Say "Detalhe completo da linha selecionada:" Size 200, 010 Font oFontNorm Of oDlg Pixel
-    @ 208, 010 Get oDetalhe Var cDetAtual Memo Size 440, 048 Of oDlg Pixel ReadOnly
+    @ 208, 010 Get oDetalhe Var cDetAtual Memo Size 440, 046 Of oDlg Pixel ReadOnly
 
     // Botoes de acao
-    @ 262, 305 Button oBtnExport Prompt "Exportar Log (.txt)" Size 070, 015 Of oDlg Pixel Action ExportarLogTxt(nIncluidos, nErros, aDetalhes)
-    @ 262, 380 Button oBtnFechar Prompt "Fechar" Size 070, 015 Of oDlg Pixel Action oDlg:End()
+    @ 259, 305 Button oBtnExport Prompt "Exportar Log (.txt)" Size 070, 015 Of oDlg Pixel Action ExportarLogTxt(nIncluidos, nErros, aDetalhes)
+    @ 259, 380 Button oBtnFechar Prompt "Fechar" Size 070, 015 Of oDlg Pixel Action oDlg:End()
 
     Activate MsDialog oDlg Centered
 
